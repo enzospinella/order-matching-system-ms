@@ -201,6 +201,42 @@ public class MatchingEngine
         return tradesMap;
     }
 
+    public void alterOrder(String orderId, int newQty)
+    {
+        Order order = orders.get(orderId);
+        if (order == null)
+            throw new IllegalArgumentException("Order not found");
+        LimitOrder limitOrder = (LimitOrder) order;
+
+        cancelOrder(orderId);
+        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), limitOrder.getPrice(), newQty);
+        processOrder(alteredOrder);
+    }
+
+    public void alterOrder(String orderId, double newPrice)
+    {
+        Order order = orders.get(orderId);
+        if (order == null)
+            throw new IllegalArgumentException("Order not found");
+        LimitOrder limitOrder = (LimitOrder) order;
+
+        cancelOrder(orderId);
+        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), newPrice, limitOrder.getQty());
+        processOrder(alteredOrder);
+    }
+
+    public void alterOrder(String orderId, int newQty, double newPrice)
+    {
+        Order order = orders.get(orderId);
+        if (order == null)
+            throw new IllegalArgumentException("Order not found");
+        LimitOrder limitOrder = (LimitOrder) order;
+
+        cancelOrder(orderId);
+        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), newPrice, newQty);
+        processOrder(alteredOrder);
+    }
+
     public String toString()
     {
         StringBuilder sb = new StringBuilder();

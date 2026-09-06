@@ -103,6 +103,55 @@ public class Main
                     bw.newLine();
                     bw.flush();
                 }
+                else if(command.equals("alter") && parts[1].equals("order") && parts[2].equals("qty"))
+                {
+                    if (parts.length < 5)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    String orderId = parts[3];                        
+                    int newQty = Integer.parseInt(parts[3]);
+                    engine.alterOrder(orderId, newQty);
+                    bw.write("Order altered");
+                    bw.newLine();
+                    bw.flush();
+                }
+                else if(command.equals("alter") && parts[1].equals("order") && parts[2].equals("price"))
+                {
+                    if (parts.length < 5)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    String orderId = parts[3];                        
+                    double newPrice = Double.parseDouble(parts[4]);
+                    engine.alterOrder(orderId, newPrice);
+                    bw.write("Order altered");
+                    bw.newLine();
+                    bw.flush();
+                }
+                else if(command.equals("alter") && parts[1].equals("order"))
+                {
+                    if (parts.length < 5)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    String orderId = parts[2];                        
+                    int newQty = Integer.parseInt(parts[3]);
+                    double newPrice = Double.parseDouble(parts[4]);
+                    engine.alterOrder(orderId, newQty, newPrice);
+                    bw.write("Order altered");
+                    bw.newLine();
+                    bw.flush();
+                }
                 else
                 {
                     bw.write("Invalid command");
