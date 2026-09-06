@@ -22,12 +22,46 @@ public class MatchingEngine
         processLimitOrder(order);
     }
 
-    private void processMarketOrder(MarketOrder order)
+    private List<Trade> processMarketOrder(MarketOrder order)
     {
-
+        List<Trade> trades = new ArrayList<>();
+        if (order.getSide().equals("buy"))
+        {
+            int qty_bought = 0;
+            for (Map.Entry<Double, Queue<Order>> entry : sells.entrySet())
+            {
+                Queue<Order> sellOrders = entry.getValue();
+                while (!sellOrders.isEmpty() && order.getQty() > 0)
+                {
+                    Order sellOrder = sellOrders.peek();
+                    int matchedQty = Math.min(order.getQty(), sellOrder.getQty());
+                    qty_bought += matchedQty;
+                    order.setQty(order.getQty() - matchedQty);
+                    sellOrder.setQty(sellOrder.getQty() - matchedQty);
+                    Trade trade = new Trade(order.getId(), sellOrder.getId(), entry.getKey(), matchedQty);
+                    trades.add(trade);
+                    if (sellOrder.getQty() == 0)
+                        sellOrders.poll();
+                }
+                if (order.getQty() == 0)
+                    break;
+            }
+        }
+        else
+        {
+            // Process sell market order
+        }
+        return trades;
     }
     private void processLimitOrder(LimitOrder order)
     {
-        
+        if (order.getSide().equals("buy"))
+        {
+            // Process buy limit order
+        }
+        else
+        {
+            // Process sell limit order
+        }
     }
 }
