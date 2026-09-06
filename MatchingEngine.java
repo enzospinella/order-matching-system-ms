@@ -6,28 +6,18 @@ public class MatchingEngine
     private TreeMap<Double, Queue<Order>> sells;
     private HashMap<String, Order> orders;
 
-    public MatchingEngine(int qty_asset)
+    public MatchingEngine()
     {
         buys = new TreeMap<>();
         sells = new TreeMap<>();
         orders = new HashMap<>();
     }
 
-    public void processOrder(MarketOrder order)
+    public HashMap<Double, Trade> processOrder(MarketOrder order)
     {
-        processMarketOrder(order);
-    }
-    public void processOrder(LimitOrder order)
-    {
-        processLimitOrder(order);
-    }
-
-    private List<Trade> processMarketOrder(MarketOrder order)
-    {
-        List<Trade> trades = new ArrayList<>();
+        HashMap<Double, Trade> tradesMap = new HashMap<>();
         if (order.getSide().equals("buy"))
         {
-            int qty_bought = 0;
             for (Map.Entry<Double, Queue<Order>> entry : sells.entrySet())
             {
                 Queue<Order> sellOrders = entry.getValue();
@@ -35,11 +25,22 @@ public class MatchingEngine
                 {
                     Order sellOrder = sellOrders.peek();
                     int matchedQty = Math.min(order.getQty(), sellOrder.getQty());
-                    qty_bought += matchedQty;
                     order.setQty(order.getQty() - matchedQty);
                     sellOrder.setQty(sellOrder.getQty() - matchedQty);
-                    Trade trade = new Trade(order.getId(), sellOrder.getId(), entry.getKey(), matchedQty);
-                    trades.add(trade);
+
+                    if (tradesMap.containsKey(entry.getKey()))
+                    {
+                        Trade existingTrade = tradesMap.get(entry.getKey());
+                        int newQty = existingTrade.getQty() + matchedQty;
+                        Trade updatedTrade = new Trade(existingTrade.getBuyOrderId(), existingTrade.getSellOrderId(), existingTrade.getPrice(), newQty);
+                        tradesMap.put(entry.getKey(), updatedTrade);
+                    }
+                    else
+                    {
+                        Trade trade = new Trade(order.getId(), sellOrder.getId(), entry.getKey(), matchedQty);
+                        tradesMap.put(entry.getKey(), trade);
+                    }
+
                     if (sellOrder.getQty() == 0)
                         sellOrders.poll();
                 }
@@ -49,19 +50,122 @@ public class MatchingEngine
         }
         else
         {
-            // Process sell market order
+            for (Map.Entry<Double, Queue<Order>> entry : buys.descendingMap().entrySet())
+            {
+                Queue<Order> buyOrders = entry.getValue();
+                while (!buyOrders.isEmpty() && order.getQty() > 0)
+                {
+                    Order buyOrder = buyOrders.peek();
+                    int matchedQty = Math.min(order.getQty(), buyOrder.getQty());
+                    order.setQty(order.getQty() - matchedQty);
+                    buyOrder.setQty(buyOrder.getQty() - matchedQty);
+
+                    if (tradesMap.containsKey(entry.getKey()))
+                    {
+                        Trade existingTrade = tradesMap.get(entry.getKey());
+                        int newQty = existingTrade.getQty() + matchedQty;
+                        Trade updatedTrade = new Trade(existingTrade.getBuyOrderId(), existingTrade.getSellOrderId(), existingTrade.getPrice(), newQty);
+                        tradesMap.put(entry.getKey(), updatedTrade);
+                    }
+                    else
+                    {
+                        Trade trade = new Trade(buyOrder.getId(), order.getId(), entry.getKey(), matchedQty);
+                        tradesMap.put(entry.getKey(), trade);
+                    }
+
+                    if (buyOrder.getQty() == 0)
+                        buyOrders.poll();
+                }
+                if (order.getQty() == 0)
+                    break;
+            }
         }
-        return trades;
+        return tradesMap;
     }
-    private void processLimitOrder(LimitOrder order)
+
+    public HashMap<Double, Trade> processOrder(LimitOrder order)
     {
+        HashMap<Double, Trade> tradesMap = new HashMap<>();
         if (order.getSide().equals("buy"))
         {
-            // Process buy limit order
+            for (Map.Entry<Double, Queue<Order>> entry : sells.entrySet())
+            {
+                if (entry.getKey() <= order.getPrice())
+                {
+                    Queue<Order> sellOrders = entry.getValue();
+                    while (!sellOrders.isEmpty() && order.getQty() > 0)
+                    {
+                        Order sellOrder = sellOrders.peek();
+                        int matchedQty = Math.min(order.getQty(), sellOrder.getQty());
+                        order.setQty(order.getQty() - matchedQty);
+                        sellOrder.setQty(sellOrder.getQty() - matchedQty);
+
+                        if (tradesMap.containsKey(entry.getKey()))
+                        {
+                            Trade existingTrade = tradesMap.get(entry.getKey());
+                            int newQty = existingTrade.getQty() + matchedQty;
+                            Trade updatedTrade = new Trade(existingTrade.getBuyOrderId(), existingTrade.getSellOrderId(), existingTrade.getPrice(), newQty);
+                            tradesMap.put(entry.getKey(), updatedTrade);
+                        }
+                        else
+                        {
+                            Trade trade = new Trade(order.getId(), sellOrder.getId(), entry.getKey(), matchedQty);
+                            tradesMap.put(entry.getKey(), trade);
+                        }
+
+                        if (sellOrder.getQty() == 0)
+                            sellOrders.poll();
+                    }
+                    if (order.getQty() == 0)
+                        break;
+                }
+            }
+            if (order.getQty() > 0)
+            {
+                buys.putIfAbsent(order.getPrice(), new LinkedList<>());
+                buys.get(order.getPrice()).add(order);
+            }
         }
         else
         {
-            // Process sell limit order
+            for (Map.Entry<Double, Queue<Order>> entry : buys.descendingMap().entrySet())
+            {
+                if (entry.getKey() >= order.getPrice())
+                {
+                    Queue<Order> buyOrders = entry.getValue();
+                    while (!buyOrders.isEmpty() && order.getQty() > 0)
+                    {
+                        Order buyOrder = buyOrders.peek();
+                        int matchedQty = Math.min(order.getQty(), buyOrder.getQty());
+                        order.setQty(order.getQty() - matchedQty);
+                        buyOrder.setQty(buyOrder.getQty() - matchedQty);
+
+                        if (tradesMap.containsKey(entry.getKey()))
+                        {
+                            Trade existingTrade = tradesMap.get(entry.getKey());
+                            int newQty = existingTrade.getQty() + matchedQty;
+                            Trade updatedTrade = new Trade(existingTrade.getBuyOrderId(), existingTrade.getSellOrderId(), existingTrade.getPrice(), newQty);
+                            tradesMap.put(entry.getKey(), updatedTrade);
+                        }
+                        else
+                        {
+                            Trade trade = new Trade(buyOrder.getId(), order.getId(), entry.getKey(), matchedQty);
+                            tradesMap.put(entry.getKey(), trade);
+                        }
+
+                        if (buyOrder.getQty() == 0)
+                            buyOrders.poll();
+                    }
+                    if (order.getQty() == 0)
+                        break;
+                }
+            }
+            if (order.getQty() > 0)
+            {
+                sells.putIfAbsent(order.getPrice(), new LinkedList<>());
+                sells.get(order.getPrice()).add(order);
+            }
         }
+        return tradesMap;
     }
 }
