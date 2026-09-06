@@ -15,4 +15,9 @@ public class LimitOrder extends Order
     {
         return price;
     }
+
+    public String toString()
+    {
+        return "Order created: " + super.getSide() + " " + super.getQty() + " @ " + price + " " + super.getId();
+    }
 }

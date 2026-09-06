@@ -13,6 +13,36 @@ public class MatchingEngine
         orders = new HashMap<>();
     }
 
+    public void cancelOrder(String orderId)
+    {
+        Order order = orders.get(orderId);
+        if (order == null)
+            throw new IllegalArgumentException("Order not found");
+        LimitOrder limitOrder = (LimitOrder) order;
+
+        if (order.getSide().equals("buy"))
+        {
+            Queue<Order> buyOrders = buys.get(limitOrder.getPrice());
+            if (buyOrders != null)
+            {
+                buyOrders.remove(order);
+                if (buyOrders.isEmpty())
+                    buys.remove(limitOrder.getPrice());
+            }
+        }
+        else
+        {
+            Queue<Order> sellOrders = sells.get(limitOrder.getPrice());
+            if (sellOrders != null)
+            {
+                sellOrders.remove(order);
+                if (sellOrders.isEmpty())
+                    sells.remove(limitOrder.getPrice());
+            }
+        }
+        orders.remove(orderId);
+    }
+
     public HashMap<Double, Trade> processOrder(MarketOrder order)
     {
         HashMap<Double, Trade> tradesMap = new HashMap<>();
@@ -124,6 +154,7 @@ public class MatchingEngine
             {
                 buys.putIfAbsent(order.getPrice(), new LinkedList<>());
                 buys.get(order.getPrice()).add(order);
+                orders.put(order.getId(), order);
             }
         }
         else
@@ -164,8 +195,36 @@ public class MatchingEngine
             {
                 sells.putIfAbsent(order.getPrice(), new LinkedList<>());
                 sells.get(order.getPrice()).add(order);
+                orders.put(order.getId(), order);
             }
         }
         return tradesMap;
+    }
+
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        List<String> buyRows = new ArrayList<>();
+        List<String> sellRows = new ArrayList<>();
+
+        for (Map.Entry<Double, Queue<Order>> entry : buys.descendingMap().entrySet())
+            for (Order order : entry.getValue())
+                buyRows.add(order.getQty() + " @ " + entry.getKey());
+
+        for (Map.Entry<Double, Queue<Order>> entry : sells.entrySet())
+            for (Order order : entry.getValue())
+                sellRows.add(order.getQty() + " @ " + entry.getKey());
+
+        sb.append(String.format("%-26s| %-26s%n", "Ordens de Compra", "Ordens de Venda"));
+        sb.append("-----------------|-----------------\n");
+
+        int rowCount = Math.max(buyRows.size(), sellRows.size());
+        for (int i = 0; i < rowCount; i++)
+        {
+            String buy = i < buyRows.size() ? buyRows.get(i) : "";
+            String sell = i < sellRows.size() ? sellRows.get(i) : "";
+            sb.append(String.format("%-26s| %s%n", buy, sell));
+        }
+        return sb.toString();
     }
 }

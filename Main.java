@@ -22,7 +22,7 @@ public class Main
                     break;
                 
                 String[] parts = line.split(" ");
-                if (parts.length < 3)
+                if (parts.length < 2)
                 {
                     bw.write("Invalid command");
                     bw.newLine();
@@ -46,6 +46,9 @@ public class Main
                     int qty = Integer.parseInt(parts[3]);
 
                     LimitOrder order = new LimitOrder(side, price, qty);
+                    bw.write(order.toString());
+                    bw.newLine();
+                    bw.flush();
                     for (Trade trade : engine.processOrder(order).values())
                     {
                         bw.write(trade.toString());
@@ -71,6 +74,34 @@ public class Main
                         bw.newLine();
                         bw.flush();
                     }
+                }
+                else if (command.equals("cancel") && parts[1].equals("order"))
+                {
+                    if (parts.length < 2)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    String orderId = parts[2];
+                    engine.cancelOrder(orderId);
+                    bw.write("Order cancelled");
+                    bw.newLine();
+                    bw.flush();
+                }
+                else if (command.equals("print") && parts[1].equals("book"))
+                {
+                    if (parts.length < 2)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    bw.write(engine.toString());
+                    bw.newLine();
+                    bw.flush();
                 }
                 else
                 {

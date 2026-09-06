@@ -5,6 +5,8 @@ public abstract class Order
     private String side;
     private int qty;
 
+    private static int idCounter = 0;
+
     public Order(String type, String side, int qty)
     {
         if ((!type.equals("limit") && !type.equals("market")) || 
@@ -12,7 +14,7 @@ public abstract class Order
             qty <= 0)
             throw new IllegalArgumentException("Invalid arguments");
 
-        this.id = java.util.UUID.randomUUID().toString();
+        this.id = "identificador_" + ++idCounter;
         this.type = type;
         this.side = side;
         this.qty = qty;

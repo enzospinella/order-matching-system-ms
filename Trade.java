@@ -35,6 +35,6 @@ public class Trade
     
     public String toString()
     {
-        return "Trade, price: " + price + ", qty: " + qty + "\n";
+        return "Trade, price: " + price + ", qty: " + qty;
     }
 }
