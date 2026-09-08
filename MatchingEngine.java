@@ -5,12 +5,58 @@ public class MatchingEngine
     private TreeMap<Double, Queue<Order>> buys;
     private TreeMap<Double, Queue<Order>> sells;
     private HashMap<String, Order> orders;
+    private HashMap<String, Order> peggedBuys;
+    private HashMap<String, Order> peggedSells;
+    private double bid;
+    private double offer;
+
+    private double getBid()
+    {
+        return bid;
+    }
+    private double getOffer()
+    {
+        return offer;
+    }
+    private void trySetBid(double bid)
+    {
+        if(bid < 0.0)
+            throw new IllegalArgumentException("Invalid bid");
+        if (bid > this.bid)
+        {
+            for (Order peggedOrder : peggedBuys.values())
+            {
+                System.out.println(peggedOrder);
+                alterOrder(peggedOrder.getId(), bid);
+            }
+            this.bid = bid;
+        }
+    }
+    private void trySetOffer(double offer)
+    {
+        if (offer < 0.0)
+            throw new IllegalArgumentException("Invalid offer");
+        if (offer > this.offer)
+        {
+            for (Order peggedOrder : peggedSells.values())
+            {
+                System.out.println(peggedOrder);
+                alterOrder(peggedOrder.getId(), offer);
+            }
+            this.offer = offer;
+        }
+    }
 
     public MatchingEngine()
     {
         buys = new TreeMap<>();
         sells = new TreeMap<>();
         orders = new HashMap<>();
+        peggedBuys = new HashMap<>();
+        peggedSells = new HashMap<>();
+
+        bid = 0.0;
+        offer = 0.0;
     }
 
     public void cancelOrder(String orderId)
@@ -41,6 +87,10 @@ public class MatchingEngine
             }
         }
         orders.remove(orderId);
+        if(peggedBuys.containsKey(orderId))
+            peggedBuys.remove(orderId);
+        if(peggedSells.containsKey(orderId))
+            peggedSells.remove(orderId);
     }
 
     public HashMap<Double, Trade> processOrder(MarketOrder order)
@@ -152,6 +202,8 @@ public class MatchingEngine
             }
             if (order.getQty() > 0)
             {
+                trySetBid(order.getPrice());
+
                 buys.putIfAbsent(order.getPrice(), new LinkedList<>());
                 buys.get(order.getPrice()).add(order);
                 orders.put(order.getId(), order);
@@ -193,6 +245,8 @@ public class MatchingEngine
             }
             if (order.getQty() > 0)
             {
+                trySetOffer(order.getPrice());
+
                 sells.putIfAbsent(order.getPrice(), new LinkedList<>());
                 sells.get(order.getPrice()).add(order);
                 orders.put(order.getId(), order);
@@ -201,19 +255,21 @@ public class MatchingEngine
         return tradesMap;
     }
 
-    public void alterOrder(String orderId, int newQty)
+    public HashMap<Double, Trade> processOrder(PeggedOrder order)
     {
-        Order order = orders.get(orderId);
-        if (order == null)
-            throw new IllegalArgumentException("Order not found");
-        LimitOrder limitOrder = (LimitOrder) order;
-
-        cancelOrder(orderId);
-        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), limitOrder.getPrice(), newQty);
-        processOrder(alteredOrder);
+        LimitOrder limitOrder;
+        if (order.getSide().equals("buy")) {
+            limitOrder = new LimitOrder(order.getId(), order.getSide(), getBid(), order.getQty());
+            peggedBuys.put(order.getId(), order);
+        }
+        else {
+            limitOrder = new LimitOrder(order.getId(), order.getSide(), getOffer(), order.getQty());
+            peggedSells.put(order.getId(), order);
+        }
+        return processOrder(limitOrder);
     }
 
-    public void alterOrder(String orderId, double newPrice)
+    public HashMap<Double, Trade> alterOrder(String orderId, int newQty)
     {
         Order order = orders.get(orderId);
         if (order == null)
@@ -221,11 +277,11 @@ public class MatchingEngine
         LimitOrder limitOrder = (LimitOrder) order;
 
         cancelOrder(orderId);
-        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), newPrice, limitOrder.getQty());
-        processOrder(alteredOrder);
+        LimitOrder alteredOrder = new LimitOrder(orderId, limitOrder.getSide(), limitOrder.getPrice(), newQty);
+        return processOrder(alteredOrder);
     }
 
-    public void alterOrder(String orderId, int newQty, double newPrice)
+    public HashMap<Double, Trade> alterOrder(String orderId, double newPrice)
     {
         Order order = orders.get(orderId);
         if (order == null)
@@ -233,8 +289,20 @@ public class MatchingEngine
         LimitOrder limitOrder = (LimitOrder) order;
 
         cancelOrder(orderId);
-        LimitOrder alteredOrder = new LimitOrder(limitOrder.getSide(), newPrice, newQty);
-        processOrder(alteredOrder);
+        LimitOrder alteredOrder = new LimitOrder(orderId, limitOrder.getSide(), newPrice, limitOrder.getQty());
+        return processOrder(alteredOrder);
+    }
+
+    public HashMap<Double, Trade> alterOrder(String orderId, int newQty, double newPrice)
+    {
+        Order order = orders.get(orderId);
+        if (order == null)
+            throw new IllegalArgumentException("Order not found");
+        LimitOrder limitOrder = (LimitOrder) order;
+
+        cancelOrder(orderId);
+        LimitOrder alteredOrder = new LimitOrder(orderId, limitOrder.getSide(), newPrice, newQty);
+        return processOrder(alteredOrder);
     }
 
     public String toString()
@@ -251,7 +319,7 @@ public class MatchingEngine
             for (Order order : entry.getValue())
                 sellRows.add(order.getQty() + " @ " + entry.getKey());
 
-        sb.append(String.format("%-26s| %-26s%n", "Ordens de Compra", "Ordens de Venda"));
+        sb.append(String.format("%-17s| %s%n", "Ordens de Compra", "Ordens de Venda"));
         sb.append("-----------------|-----------------\n");
 
         int rowCount = Math.max(buyRows.size(), sellRows.size());
@@ -259,7 +327,7 @@ public class MatchingEngine
         {
             String buy = i < buyRows.size() ? buyRows.get(i) : "";
             String sell = i < sellRows.size() ? sellRows.get(i) : "";
-            sb.append(String.format("%-26s| %s%n", buy, sell));
+            sb.append(String.format("%-17s| %s%n", buy, sell));
         }
         return sb.toString();
     }

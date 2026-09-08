@@ -113,9 +113,15 @@ public class Main
                         continue;
                     }
                     String orderId = parts[3];                        
-                    int newQty = Integer.parseInt(parts[3]);
-                    engine.alterOrder(orderId, newQty);
-                    bw.write("Order altered");
+                    int newQty = Integer.parseInt(parts[4]);
+                    
+                    for (Trade trade : engine.alterOrder(orderId, newQty).values())
+                    {
+                        bw.write(trade.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
+                    bw.write("Order altered: " + orderId);
                     bw.newLine();
                     bw.flush();
                 }
@@ -130,8 +136,14 @@ public class Main
                     }
                     String orderId = parts[3];                        
                     double newPrice = Double.parseDouble(parts[4]);
-                    engine.alterOrder(orderId, newPrice);
-                    bw.write("Order altered");
+
+                    for (Trade trade : engine.alterOrder(orderId, newPrice).values())
+                    {
+                        bw.write(trade.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
+                    bw.write("Order altered: " + orderId);
                     bw.newLine();
                     bw.flush();
                 }
@@ -145,12 +157,65 @@ public class Main
                         continue;
                     }
                     String orderId = parts[2];                        
-                    int newQty = Integer.parseInt(parts[3]);
-                    double newPrice = Double.parseDouble(parts[4]);
-                    engine.alterOrder(orderId, newQty, newPrice);
-                    bw.write("Order altered");
+                    double newPrice = Double.parseDouble(parts[3]);
+                    int newQty = Integer.parseInt(parts[4]);
+                    
+                    for (Trade trade : engine.alterOrder(orderId, newQty, newPrice).values())
+                    {
+                        bw.write(trade.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
+                    bw.write("Order altered: " + orderId);
                     bw.newLine();
                     bw.flush();
+                }
+                else if (command.equals("peg") && parts[1].equals("bid") && parts[2].equals("buy"))
+                {
+                    if (parts.length < 4)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    int qty = Integer.parseInt(parts[3]);
+
+                    PeggedOrder order = new PeggedOrder("buy", qty);
+                    bw.write(order.toString());
+                    bw.newLine();
+                    bw.flush();
+
+                    for (Trade trade : engine.processOrder(order).values())
+                    {
+                        bw.write(trade.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
+                    
+                }
+                else if (command.equals("peg") && parts[1].equals("offer") && parts[2].equals("sell"))
+                {
+                    if (parts.length < 4)
+                    {
+                        bw.write("Invalid command");
+                        bw.newLine();
+                        bw.flush();
+                        continue;
+                    }
+                    int qty = Integer.parseInt(parts[3]);
+
+                    PeggedOrder order = new PeggedOrder("sell", qty);
+                    bw.write(order.toString());
+                    bw.newLine();
+                    bw.flush();
+                    
+                    for (Trade trade : engine.processOrder(order).values())
+                    {
+                        bw.write(trade.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
                 }
                 else
                 {

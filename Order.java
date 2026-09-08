@@ -14,7 +14,20 @@ public abstract class Order
             qty <= 0)
             throw new IllegalArgumentException("Invalid arguments");
 
-        this.id = "identificador_" + ++idCounter;
+        this.id = "id_" + ++idCounter;
+        this.type = type;
+        this.side = side;
+        this.qty = qty;
+    }
+
+    public Order(String id,String type, String side, int qty)
+    {
+        if ((!type.equals("limit") && !type.equals("market")) || 
+            (!side.equals("buy") && !side.equals("sell")) ||
+            qty <= 0)
+            throw new IllegalArgumentException("Invalid arguments");
+
+        this.id = id;
         this.type = type;
         this.side = side;
         this.qty = qty;

@@ -10,6 +10,15 @@ public class LimitOrder extends Order
         
         this.price = price;
     }
+    
+    public LimitOrder(String id, String side, double price, int qty)
+    {
+        super(id, "limit", side, qty);
+        if (price <= 0.0)
+            throw new IllegalArgumentException("Invalid arguments");
+        
+        this.price = price;
+    }
 
     public double getPrice()
     {
