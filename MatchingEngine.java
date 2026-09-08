@@ -12,21 +12,20 @@ public class MatchingEngine
 
     private double getBid()
     {
-        return bid;
+        return buys.isEmpty() ? 0.0 : buys.lastKey();
     }
     private double getOffer()
     {
-        return offer;
+        return sells.isEmpty() ? 0.0 : sells.firstKey();
     }
     private void trySetBid(double bid)
     {
         if(bid < 0.0)
             throw new IllegalArgumentException("Invalid bid");
-        if (bid > this.bid)
+        if (bid > this.getBid())
         {
             for (Order peggedOrder : peggedBuys.values())
             {
-                System.out.println(peggedOrder);
                 alterOrder(peggedOrder.getId(), bid);
             }
             this.bid = bid;
@@ -36,11 +35,10 @@ public class MatchingEngine
     {
         if (offer < 0.0)
             throw new IllegalArgumentException("Invalid offer");
-        if (offer > this.offer)
+        if (offer > this.getOffer())
         {
             for (Order peggedOrder : peggedSells.values())
             {
-                System.out.println(peggedOrder);
                 alterOrder(peggedOrder.getId(), offer);
             }
             this.offer = offer;
@@ -259,11 +257,17 @@ public class MatchingEngine
     {
         LimitOrder limitOrder;
         if (order.getSide().equals("buy")) {
-            limitOrder = new LimitOrder(order.getId(), order.getSide(), getBid(), order.getQty());
+            double referenceBid = getBid();
+            if (referenceBid == 0.0)
+                throw new IllegalArgumentException("No reference bid available for peg order.");
+            limitOrder = new LimitOrder(order.getId(), order.getSide(), referenceBid, order.getQty());
             peggedBuys.put(order.getId(), order);
         }
         else {
-            limitOrder = new LimitOrder(order.getId(), order.getSide(), getOffer(), order.getQty());
+            double referenceOffer = getOffer();
+            if (referenceOffer == 0.0)
+                throw new IllegalArgumentException("No reference offer available for peg order.");
+            limitOrder = new LimitOrder(order.getId(), order.getSide(), referenceOffer, order.getQty());
             peggedSells.put(order.getId(), order);
         }
         return processOrder(limitOrder);
